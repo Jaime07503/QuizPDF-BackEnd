@@ -55,6 +55,8 @@ async function cleanText(text) {
     .trim();
 }
 
+app.get("/", (req, res) => res.send("Express on Vercel"));
+
 app.post("/upload", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send("No se subió ningún archivo.");
