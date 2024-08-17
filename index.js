@@ -11,9 +11,12 @@ const upload = multer({ dest: "uploads/" });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-var corsOptions = {
-  origin: "*",
+const corsOptions = {
+  origin: "https://quiz-pdf-front-end.vercel.app",
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders: "Content-Type",
 };
+
 app.use(cors(corsOptions));
 
 const openai = new OpenAI({
