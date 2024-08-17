@@ -12,7 +12,7 @@ var corsOptions = {
   origin: "*",
 };
 app.use(cors(corsOptions));
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 const upload = multer({ dest: "uploads/" });
 
