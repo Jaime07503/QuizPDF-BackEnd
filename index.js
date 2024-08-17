@@ -5,6 +5,8 @@ const path = require("path");
 const cors = require("cors");
 const OpenAI = require("openai");
 require("dotenv").config();
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -53,7 +55,7 @@ async function cleanText(text) {
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
-app.post("/upload", async (req, res) => {
+app.post("/upload", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res.status(400).send("No se subió ningún archivo.");
   }
