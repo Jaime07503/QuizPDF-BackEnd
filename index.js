@@ -8,7 +8,10 @@ const OpenAI = require("openai");
 require("dotenv").config();
 
 const app = express();
-app.use(cors());
+var corsOptions = {
+  origin: "*",
+};
+app.use(cors(corsOptions));
 const PORT = process.env.PORT || 5000;
 
 const upload = multer({ dest: "uploads/" });
