@@ -1,17 +1,13 @@
 const express = require("express");
 const pdfParse = require("pdf-parse");
-const fs = require("fs");
-const path = require("path");
 const cors = require("cors");
 const OpenAI = require("openai");
 require("dotenv").config();
-const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 app.use(cors());
+app.use(express.json());
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_APIKEY,
@@ -19,27 +15,27 @@ const openai = new OpenAI({
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
-app.post("/upload", upload.single("file"), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).send("No se subió ningún archivo.");
+app.post("/upload", async (req, res) => {
+  if (!req.body || !req.body.fileBuffer) {
+    return res.status(400).send("No file data provided.");
   }
 
   try {
-    const filePath = path.join(__dirname, req.file.path);
-    const dataBuffer = fs.readFileSync(filePath);
+    // Convert base64 to buffer
+    const fileBuffer = Buffer.from(req.body.fileBuffer, "base64");
 
-    // Extraer el texto del PDF
-    const data = await pdfParse(dataBuffer);
+    // Extract text from PDF
+    const data = await pdfParse(fileBuffer);
     const extractedText = data.text;
 
-    // Limpiar el texto (función integrada)
+    // Clean the text
     const cleanExtractedText = extractedText
       .replace(/[\r\n]+/g, " ")
       .replace(/[^\w\s]/g, "")
       .replace(/\s+/g, " ")
       .trim();
 
-    // Generar resumen
+    // Generate summary
     const summaryResponse = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -52,7 +48,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     });
     const summary = summaryResponse.choices[0].message.content;
 
-    // Generar preguntas y respuestas
+    // Generate questions and answers
     const questionsResponse = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -65,21 +61,14 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     });
     const questions = questionsResponse.choices[0].message.content;
 
-    // Borrar el archivo después de procesarlo
-    fs.unlinkSync(filePath);
-
     res.json({
       summary,
       questions,
     });
   } catch (error) {
-    console.error("Error al procesar el archivo:", error);
-    res.status(500).send("Error al procesar el archivo.");
+    console.error("Error processing file:", error);
+    res.status(500).send("Error processing file.");
   }
-});
-
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en el puerto ${PORT}`);
 });
 
 module.exports = app;
