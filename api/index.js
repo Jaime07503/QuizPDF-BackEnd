@@ -10,7 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const corsOptions = {
-  origin: "https://ara-quizzes.vercel.app",
+  origin: "*",
   methods: ["GET", "POST"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
