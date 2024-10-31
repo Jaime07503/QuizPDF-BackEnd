@@ -3,8 +3,11 @@ const pdfParse = require("pdf-parse");
 const cors = require("cors");
 const OpenAI = require("openai");
 require("dotenv").config();
+const multer = require("multer");
+const upload = multer();
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -15,60 +18,50 @@ const openai = new OpenAI({
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
-app.post("/upload", async (req, res) => {
-  if (!req.body || !req.body.fileBuffer) {
-    return res.status(400).send("No file data provided.");
+app.post("/upload", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).send("No se subió ningún archivo.");
   }
 
   try {
-    // Convert base64 to buffer
-    const fileBuffer = Buffer.from(req.body.fileBuffer, "base64");
+    const pdfData = await pdfParse(req.file.buffer);
+    const text = pdfData.text;
 
-    // Extract text from PDF
-    const data = await pdfParse(fileBuffer);
-    const extractedText = data.text;
-
-    // Clean the text
-    const cleanExtractedText = extractedText
-      .replace(/[\r\n]+/g, " ")
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    // Generate summary
+    // Lógica para el resumen
     const summaryResponse = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         {
           role: "user",
-          content: `Summarize the following text:\n\n${cleanExtractedText}`,
+          content: `Summarize the following text:\n\n${text}`,
         },
       ],
       max_tokens: 100,
     });
+
     const summary = summaryResponse.choices[0].message.content;
 
-    // Generate questions and answers
+    // Lógica para las preguntas
     const questionsResponse = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         {
           role: "user",
-          content: `Generate three questions and answers from the following text:\n\n${cleanExtractedText}`,
+          content: `Generate a three questions and answers from the following text:\n\n${text}`,
         },
       ],
       max_tokens: 300,
     });
+
     const questions = questionsResponse.choices[0].message.content;
 
-    res.json({
-      summary,
-      questions,
-    });
+    res.json({ summary, questions });
   } catch (error) {
-    console.error("Error processing file:", error);
-    res.status(500).send("Error processing file.");
+    console.error("Error en el procesamiento:", error);
+    res.status(500).json({ error: "Error al procesar el archivo." });
   }
 });
 
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
