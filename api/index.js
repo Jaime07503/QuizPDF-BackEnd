@@ -48,7 +48,7 @@ app.post(
             content: `Summarize the following text:\n\n${text}`,
           },
         ],
-        max_tokens: 100,
+        max_tokens: 150,
       });
 
       const summary = summaryResponse.choices[0].message.content;
